@@ -18,6 +18,8 @@ export const GET: APIRoute = async ({ site }) => {
       tags: p.data.tags,
       words: wordCount(p.body),
       ai_assisted: p.data.ai_assisted,
+      source_url: p.data.source_url ?? null,
+      image: p.data.image ?? null,
       url: absUrl(`/posts/${p.slug}/`, site),
       markdown: absUrl(`/posts/${p.slug}.md`, site),
     })),

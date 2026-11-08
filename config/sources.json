@@ -1,0 +1,51 @@
+{
+  "max_age_days": 4,
+  "relevance_keywords": [
+    "linux", "kernel", "ubuntu", "debian", "fedora", "open source", "open-source", "opensource",
+    "security", "vulnerab", "cve-", "patch", "zero-day", "0-day", "breach", "ransomware", "malware",
+    "phishing", "password", "passkey", "encrypt", "privacy", "backdoor", "supply chain", "firmware",
+    "ssh", "tls", "dns", "vpn", "firewall", "network", "router", "docker", "container", "kubernetes",
+    "server", "self-host", "homelab", "git", "cloud", "outage", "browser", "chrome", "firefox",
+    "android", "windows", "database", "postgres", "sqlite", "rust", "python", "api", "cpu", "gpu", "chip"
+  ],
+  "groups": [
+    {
+      "name": "Hacker News",
+      "type": "hn",
+      "min_score": 80,
+      "filter": true
+    },
+    {
+      "name": "Security",
+      "type": "rss",
+      "filter": false,
+      "feeds": [
+        {"name": "CISA", "url": "https://www.cisa.gov/cybersecurity-advisories/all.xml"},
+        {"name": "Krebs on Security", "url": "https://krebsonsecurity.com/feed/"},
+        {"name": "BleepingComputer", "url": "https://www.bleepingcomputer.com/feed/"},
+        {"name": "The Hacker News", "url": "https://feeds.feedburner.com/TheHackersNews"}
+      ]
+    },
+    {
+      "name": "Linux",
+      "type": "rss",
+      "filter": false,
+      "feeds": [
+        {"name": "LWN.net", "url": "https://lwn.net/headlines/rss"},
+        {"name": "Phoronix", "url": "https://www.phoronix.com/rss.php"},
+        {"name": "It's FOSS", "url": "https://itsfoss.com/feed/"},
+        {"name": "Ubuntu Security Notices", "url": "https://ubuntu.com/security/notices/rss.xml"}
+      ]
+    },
+    {
+      "name": "Tech",
+      "type": "rss",
+      "filter": true,
+      "feeds": [
+        {"name": "Ars Technica", "url": "https://feeds.arstechnica.com/arstechnica/index"},
+        {"name": "Hackaday", "url": "https://hackaday.com/blog/feed/"},
+        {"name": "Lobsters", "url": "https://lobste.rs/rss"}
+      ]
+    }
+  ]
+}

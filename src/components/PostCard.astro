@@ -1,0 +1,20 @@
+---
+import Cover from './Cover.astro';
+import type { PostWithSlug } from '../lib/posts';
+import { withBase, fmtDate, readingMinutes } from '../lib/util';
+interface Props { post: PostWithSlug; featured?: boolean; eager?: boolean }
+const { post, featured = false, eager = false } = Astro.props;
+const d = post.data;
+const href = withBase(`/posts/${post.slug}/`);
+---
+<article class={featured ? 'card featured' : 'card'}>
+  <a class="cover-link" href={href} tabindex="-1" aria-hidden="true"><Cover post={post} eager={eager} /></a>
+  <div class="card-body">
+    <div class="kicker">{d.category}</div>
+    <h2><a href={href}>{d.title}</a></h2>
+    <p>{d.description}</p>
+    <div class="meta">
+      <time datetime={d.date.toISOString()}>{fmtDate(d.date)}</time> · {readingMinutes(post.body)} min read
+    </div>
+  </div>
+</article>

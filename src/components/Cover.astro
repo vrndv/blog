@@ -1,0 +1,23 @@
+---
+import type { PostWithSlug } from '../lib/posts';
+import { coverGradient } from '../lib/util';
+interface Props { post: PostWithSlug; eager?: boolean }
+const { post, eager = false } = Astro.props;
+const d = post.data;
+---
+{d.image ? (
+  <img
+    class="cover"
+    src={d.image}
+    alt={d.image_alt || d.title}
+    width="1200"
+    height="627"
+    loading={eager ? 'eager' : 'lazy'}
+    fetchpriority={eager ? 'high' : 'auto'}
+    decoding="async"
+  />
+) : (
+  <div class="cover cover-gen" style={`background:${coverGradient(d.category + d.title)}`} role="img" aria-label={d.category}>
+    <span>{d.category}</span>
+  </div>
+)}

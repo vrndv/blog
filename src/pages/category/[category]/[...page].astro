@@ -23,9 +23,9 @@ const base = `/category/${slugify(category)}/`;
 const path = page.currentPage === 1 ? base : `${base}${page.currentPage}/`;
 const title = page.currentPage === 1 ? `${category} articles` : `${category} articles, page ${page.currentPage}`;
 ---
-<Base title={title} description={`${category} guides and tutorials from ${SITE.name}.`} path={path}>
+<Base title={title} description={`${category} news, guides and tutorials from ${SITE.name}.`} path={path}>
   <h1>{category}</h1>
-  <p class="lede">Guides and tutorials in this category, newest first.</p>
+  <p class="lede">Latest in this category, newest first.</p>
   <PostList posts={page.data} />
   <Pagination prev={page.url.prev} next={page.url.next} current={page.currentPage} total={page.lastPage} />
 </Base>

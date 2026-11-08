@@ -12,6 +12,12 @@ const posts = defineCollection({
     draft: z.boolean().default(false),
     ai_assisted: z.boolean().default(false),
     model: z.string().optional(),
+    source_name: z.string().optional(),
+    source_url: z.string().optional(),
+    image: z.string().optional(),
+    image_alt: z.string().optional(),
+    image_credit: z.string().optional(),
+    image_credit_url: z.string().optional(),
   }),
 });
 

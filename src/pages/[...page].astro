@@ -1,8 +1,10 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import Base from '../layouts/BaseLayout.astro';
+import PostCard from '../components/PostCard.astro';
 import PostList from '../components/PostList.astro';
 import Pagination from '../components/Pagination.astro';
+import AdSlot from '../components/AdSlot.astro';
 import { getPosts, categoryCounts } from '../lib/posts';
 import { SITE } from '../config';
 import { absUrl, withBase } from '../lib/util';
@@ -17,32 +19,52 @@ const isFirst = page.currentPage === 1;
 const path = isFirst ? '/' : `/${page.currentPage}/`;
 const title = isFirst ? `${SITE.name}: ${SITE.tagline}` : `Latest articles, page ${page.currentPage}`;
 const cats = categoryCounts(await getPosts());
+const [hero, ...rest] = page.data;
+const gridPosts = isFirst ? rest.slice(0, 4) : [];
+const listPosts = isFirst ? rest.slice(4) : page.data;
 const jsonLd = isFirst
-  ? [
-      {
-        '@context': 'https://schema.org',
-        '@type': 'WebSite',
-        name: SITE.name,
-        url: absUrl('/', Astro.site),
-        description: SITE.description,
-        inLanguage: SITE.lang,
-      },
-    ]
+  ? [{
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: SITE.name,
+      url: absUrl('/', Astro.site),
+      description: SITE.description,
+      inLanguage: SITE.lang,
+    }]
   : [];
 ---
-<Base title={title} description={SITE.description} path={path} jsonLd={jsonLd}>
-  {isFirst && (
-    <>
-      <h1>{SITE.name}</h1>
-      <p class="lede">{SITE.description}</p>
-      <ul class="chips" aria-label="Categories">
-        {cats.map((c) => <li><a href={withBase(`/category/${c.slug}/`)}>{c.name} ({c.count})</a></li>)}
-      </ul>
-    </>
-  )}
-  {!isFirst && <h1>Latest articles</h1>}
-  {page.data.length === 0
-    ? <p>No articles yet. The first one is on its way.</p>
-    : <PostList posts={page.data} />}
-  <Pagination prev={page.url.prev} next={page.url.next} current={page.currentPage} total={page.lastPage} />
+<Base title={title} description={SITE.description} path={path} jsonLd={jsonLd} wide>
+  {isFirst ? <h1 class="masthead">{SITE.name} <span>{SITE.tagline}</span></h1> : <h1 class="masthead">Latest articles</h1>}
+  <div class="layout">
+    <div>
+      {page.data.length === 0 && <p>No articles yet. The first one is on its way.</p>}
+      {isFirst && hero && <PostCard post={hero} featured eager />}
+      {gridPosts.length > 0 && (
+        <div class="grid">
+          {gridPosts.map((p) => <PostCard post={p} />)}
+        </div>
+      )}
+      {listPosts.length > 0 && (
+        <>
+          {isFirst && <h2 class="section-title">More stories</h2>}
+          <PostList posts={listPosts} />
+        </>
+      )}
+      <Pagination prev={page.url.prev} next={page.url.next} current={page.currentPage} total={page.lastPage} />
+    </div>
+    <aside class="sidebar" aria-label="Sidebar">
+      <section class="box">
+        <h2>Categories</h2>
+        <ul>
+          {cats.map((c) => <li><a href={withBase(`/category/${c.slug}/`)}>{c.name}</a> <span class="meta">({c.count})</span></li>)}
+        </ul>
+      </section>
+      <section class="box">
+        <h2>About</h2>
+        <p>{SITE.description}</p>
+        <p><a href={withBase('/about/')}>Read more</a> · <a href={withBase('/rss.xml')}>RSS</a></p>
+      </section>
+      <AdSlot slot="sidebar" />
+    </aside>
+  </div>
 </Base>

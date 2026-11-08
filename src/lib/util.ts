@@ -15,3 +15,13 @@ export const wordCount = (body?: string) => (body ?? '').split(/\s+/).filter(Boo
 export const readingMinutes = (body?: string) => Math.max(1, Math.round(wordCount(body) / 220));
 
 export const escapeJson = (o: unknown) => JSON.stringify(o).replace(/</g, '\\u003c');
+
+export const coverGradient = (seed: string) => {
+  let h = 0;
+  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return `linear-gradient(135deg, hsl(${h} 55% 30%), hsl(${(h + 45) % 360} 60% 20%))`;
+};
+
+export const hostOf = (url?: string) => {
+  try { return new URL(url ?? '').hostname.replace(/^www\./, ''); } catch { return ''; }
+};

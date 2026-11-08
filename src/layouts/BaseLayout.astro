@@ -15,6 +15,8 @@ interface Props {
   tags?: string[];
   noindex?: boolean;
   markdownPath?: string;
+  image?: string;
+  wide?: boolean;
 }
 const {
   title,
@@ -27,10 +29,12 @@ const {
   tags = [],
   noindex = false,
   markdownPath,
+  image,
+  wide = false,
 } = Astro.props;
 
 const canonical = absUrl(path, Astro.site);
-const ogImage = absUrl('/og-default.png', Astro.site);
+const ogImage = image ?? absUrl('/og-default.png', Astro.site);
 const fullTitle = title.includes(SITE.name) ? title : `${title} | ${SITE.name}`;
 const cats = categoryCounts(await getPosts());
 ---
@@ -47,6 +51,7 @@ const cats = categoryCounts(await getPosts());
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)" />
     <meta name="author" content={SITE.author} />
+    {SITE.adsense.client && <meta name="google-adsense-account" content={SITE.adsense.client} />}
 
     <meta property="og:site_name" content={SITE.name} />
     <meta property="og:type" content={type} />
@@ -69,6 +74,9 @@ const cats = categoryCounts(await getPosts());
     <link rel="alternate" type="application/rss+xml" title={`${SITE.name} RSS`} href={withBase('/rss.xml')} />
     {markdownPath && <link rel="alternate" type="text/markdown" href={withBase(markdownPath)} />}
 
+    {SITE.adsense.client && (
+      <script is:inline async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${SITE.adsense.client}`} crossorigin="anonymous"></script>
+    )}
     {jsonLd.map((o) => <script type="application/ld+json" set:html={escapeJson(o)} />)}
 
     <script is:inline>
@@ -83,7 +91,7 @@ const cats = categoryCounts(await getPosts());
   <body>
     <a class="skip" href="#content">Skip to content</a>
     <header class="site">
-      <div class="wrap">
+      <div class="wrap wide">
         <a class="brand" href={withBase('/')}>{SITE.name}</a>
         <nav class="main" aria-label="Main">
           {cats.map((c) => <a href={withBase(`/category/${c.slug}/`)}>{c.name}</a>)}
@@ -93,12 +101,12 @@ const cats = categoryCounts(await getPosts());
       </div>
     </header>
     <main id="content">
-      <div class="wrap">
+      <div class={wide ? 'wrap wide' : 'wrap'}>
         <slot />
       </div>
     </main>
     <footer class="site">
-      <div class="wrap">
+      <div class="wrap wide">
         <ul>
           <li><a href={withBase('/about/')}>About</a></li>
           <li><a href={withBase('/editorial-policy/')}>Editorial policy</a></li>

@@ -51,6 +51,10 @@
         "DNS ad-blocking at home",
         "safe remote access to a home network"
       ]
+    },
+    {
+      "name": "Tech News",
+      "seeds": []
     }
   ],
   "blocked_phrases": [

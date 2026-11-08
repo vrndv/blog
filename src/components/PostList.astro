@@ -1,4 +1,5 @@
 ---
+import Cover from './Cover.astro';
 import { withBase, fmtDate, readingMinutes } from '../lib/util';
 import type { PostWithSlug } from '../lib/posts';
 interface Props { posts: PostWithSlug[] }
@@ -7,12 +8,15 @@ const { posts } = Astro.props;
 <ul class="post-list">
   {posts.map((p) => (
     <li>
-      <h2><a href={withBase(`/posts/${p.slug}/`)}>{p.data.title}</a></h2>
-      <div class="meta">
-        <time datetime={p.data.date.toISOString()}>{fmtDate(p.data.date)}</time>
-        · {p.data.category} · {readingMinutes(p.body)} min read
+      <a class="thumb" href={withBase(`/posts/${p.slug}/`)} tabindex="-1" aria-hidden="true"><Cover post={p} /></a>
+      <div>
+        <div class="kicker">{p.data.category}</div>
+        <h2><a href={withBase(`/posts/${p.slug}/`)}>{p.data.title}</a></h2>
+        <p>{p.data.description}</p>
+        <div class="meta">
+          <time datetime={p.data.date.toISOString()}>{fmtDate(p.data.date)}</time> · {readingMinutes(p.body)} min read
+        </div>
       </div>
-      <p>{p.data.description}</p>
     </li>
   ))}
 </ul>

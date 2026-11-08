@@ -8,4 +8,11 @@ export const SITE = {
   email: '', // optional: shown on the editorial policy page for corrections
   lang: 'en',
   postsPerPage: 20,
+  // Google AdSense. Leave client empty until your account is approved.
+  // client looks like 'ca-pub-1234567890123456'. Slot IDs come from AdSense > Ads > By ad unit.
+  // With only the client set, Auto ads handle placement; manual slots below are optional.
+  adsense: {
+    client: '',
+    slots: { top: '', bottom: '', sidebar: '' } as Record<string, string>,
+  },
 };

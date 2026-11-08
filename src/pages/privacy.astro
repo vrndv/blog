@@ -1,13 +1,21 @@
 ---
 import Base from '../layouts/BaseLayout.astro';
 import { SITE } from '../config';
+const ads = Boolean(SITE.adsense.client);
 ---
 <Base title="Privacy" description={`Privacy information for ${SITE.name}.`} path="/privacy/">
   <h1>Privacy</h1>
   <div class="prose">
-    <p>This site does not use cookies, analytics or advertising trackers at the time of writing.</p>
+    {ads ? (
+      <>
+        <p>This site shows advertising from Google AdSense. Google and its partners may use cookies or similar technologies to serve and measure ads, including personalised ads where permitted. Where the law requires it, you will be asked for consent and can change your choice at any time through the consent message on the site.</p>
+        <p>Learn how Google uses data from sites that use its services at <a href="https://policies.google.com/technologies/partner-sites" rel="noopener">policies.google.com/technologies/partner-sites</a>. You can manage ad personalisation at <a href="https://adssettings.google.com" rel="noopener">adssettings.google.com</a>.</p>
+      </>
+    ) : (
+      <p>This site does not use cookies, analytics or advertising trackers at the time of writing.</p>
+    )}
     <p>If you use the light/dark toggle, your choice is saved in your browser's local storage on your device. It is never sent to us.</p>
     <p>The site is hosted on GitHub Pages. GitHub may process technical data such as your IP address when you visit, under its own privacy statement.</p>
-    <p>If we add analytics or advertising in future, we will update this page and ask for consent where the law requires it.</p>
+    <p>Article photos are loaded from Pexels, which may receive your IP address when the image loads.</p>
   </div>
 </Base>

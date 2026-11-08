@@ -29,19 +29,23 @@ jobs:
       - name: Work out site URL and base path
         env:
           CUSTOM_SITE_URL: ${{ vars.SITE_URL }}
+          CUSTOM_BASE_PATH: ${{ vars.BASE_PATH }}
         run: |
           OWNER="${GITHUB_REPOSITORY_OWNER,,}"
           REPO="${GITHUB_REPOSITORY#*/}"
-          if [ -n "$CUSTOM_SITE_URL" ]; then
-            echo "SITE_URL=$CUSTOM_SITE_URL" >> "$GITHUB_ENV"
-            echo "BASE_PATH=/" >> "$GITHUB_ENV"
+          # Site URL: repo variable SITE_URL (custom domain) or the default github.io address
+          SITE="${CUSTOM_SITE_URL:-https://${OWNER}.github.io}"
+          # Base path: repo variable BASE_PATH, else "/" for a user site, else "/<repo>"
+          if [ -n "$CUSTOM_BASE_PATH" ]; then
+            BASE="$CUSTOM_BASE_PATH"
           elif [ "${REPO,,}" = "${OWNER}.github.io" ]; then
-            echo "SITE_URL=https://${OWNER}.github.io" >> "$GITHUB_ENV"
-            echo "BASE_PATH=/" >> "$GITHUB_ENV"
+            BASE="/"
           else
-            echo "SITE_URL=https://${OWNER}.github.io" >> "$GITHUB_ENV"
-            echo "BASE_PATH=/${REPO}" >> "$GITHUB_ENV"
+            BASE="/${REPO}"
           fi
+          echo "SITE_URL=$SITE" >> "$GITHUB_ENV"
+          echo "BASE_PATH=$BASE" >> "$GITHUB_ENV"
+          echo "Building for $SITE with base $BASE"
 
       - run: npm install
       - run: npm run build

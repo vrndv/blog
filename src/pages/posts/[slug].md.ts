@@ -23,6 +23,7 @@ export const GET: APIRoute = ({ props, site }) => {
     `- Category: ${d.category}`,
     `- Tags: ${d.tags.join(', ')}`,
     `- Publisher: ${SITE.name}`,
+    d.source_url ? `- Based on reporting from: ${d.source_name ?? ''} ${d.source_url}` : '',
     d.ai_assisted ? '- Note: written with AI assistance and published without individual human review.' : '',
     '',
     post.body ?? '',

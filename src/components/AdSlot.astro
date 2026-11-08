@@ -1,0 +1,20 @@
+---
+import { SITE } from '../config';
+interface Props { slot?: 'top' | 'bottom' | 'sidebar' }
+const { slot = 'top' } = Astro.props;
+const slotId = SITE.adsense.slots[slot];
+---
+{SITE.adsense.client && slotId && (
+  <div class="ad">
+    <small>Advertisement</small>
+    <ins
+      class="adsbygoogle"
+      style="display:block"
+      data-ad-client={SITE.adsense.client}
+      data-ad-slot={slotId}
+      data-ad-format="auto"
+      data-full-width-responsive="true"
+    ></ins>
+    <script is:inline>(window.adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
+)}
