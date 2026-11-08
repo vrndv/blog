@@ -1,0 +1,133 @@
+---
+import '../styles/global.css';
+import { SITE } from '../config';
+import { absUrl, withBase, escapeJson } from '../lib/util';
+import { getPosts, categoryCounts } from '../lib/posts';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  type?: 'website' | 'article';
+  jsonLd?: object[];
+  published?: Date;
+  section?: string;
+  tags?: string[];
+  noindex?: boolean;
+  markdownPath?: string;
+}
+const {
+  title,
+  description,
+  path,
+  type = 'website',
+  jsonLd = [],
+  published,
+  section,
+  tags = [],
+  noindex = false,
+  markdownPath,
+} = Astro.props;
+
+const canonical = absUrl(path, Astro.site);
+const ogImage = absUrl('/og-default.png', Astro.site);
+const fullTitle = title.includes(SITE.name) ? title : `${title} | ${SITE.name}`;
+const cats = categoryCounts(await getPosts());
+---
+<!doctype html>
+<html lang={SITE.lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="robots" content={noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1'} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)" />
+    <meta name="author" content={SITE.author} />
+
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+    {published && <meta property="article:published_time" content={published.toISOString()} />}
+    {section && <meta property="article:section" content={section} />}
+    {tags.map((t) => <meta property="article:tag" content={t} />)}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
+    <link rel="alternate" type="application/rss+xml" title={`${SITE.name} RSS`} href={withBase('/rss.xml')} />
+    {markdownPath && <link rel="alternate" type="text/markdown" href={withBase(markdownPath)} />}
+
+    {jsonLd.map((o) => <script type="application/ld+json" set:html={escapeJson(o)} />)}
+
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem('theme');
+          if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#content">Skip to content</a>
+    <header class="site">
+      <div class="wrap">
+        <a class="brand" href={withBase('/')}>{SITE.name}</a>
+        <nav class="main" aria-label="Main">
+          {cats.map((c) => <a href={withBase(`/category/${c.slug}/`)}>{c.name}</a>)}
+          <a href={withBase('/about/')}>About</a>
+          <button id="theme-toggle" type="button" aria-label="Toggle dark mode">◐</button>
+        </nav>
+      </div>
+    </header>
+    <main id="content">
+      <div class="wrap">
+        <slot />
+      </div>
+    </main>
+    <footer class="site">
+      <div class="wrap">
+        <ul>
+          <li><a href={withBase('/about/')}>About</a></li>
+          <li><a href={withBase('/editorial-policy/')}>Editorial policy</a></li>
+          <li><a href={withBase('/privacy/')}>Privacy</a></li>
+          <li><a href={withBase('/rss.xml')}>RSS</a></li>
+          <li><a href={withBase('/sitemap-index.xml')}>Sitemap</a></li>
+          <li><a href={withBase('/llms.txt')}>llms.txt</a></li>
+          <li><a href={withBase('/api/posts.json')}>JSON index</a></li>
+        </ul>
+        <p>© {new Date().getUTCFullYear()} {SITE.name}. Articles are written with AI assistance. See the <a href={withBase('/editorial-policy/')}>editorial policy</a>.</p>
+      </div>
+    </footer>
+    <script is:inline>
+      (function () {
+        var b = document.getElementById('theme-toggle');
+        if (!b) return;
+        function cur() {
+          var t = document.documentElement.getAttribute('data-theme');
+          if (t) return t;
+          return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        b.setAttribute('aria-pressed', String(cur() === 'dark'));
+        b.addEventListener('click', function () {
+          var n = cur() === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', n);
+          try { localStorage.setItem('theme', n); } catch (e) {}
+          b.setAttribute('aria-pressed', String(n === 'dark'));
+        });
+      })();
+    </script>
+  </body>
+</html>

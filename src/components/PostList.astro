@@ -1,0 +1,18 @@
+---
+import { withBase, fmtDate, readingMinutes } from '../lib/util';
+import type { PostWithSlug } from '../lib/posts';
+interface Props { posts: PostWithSlug[] }
+const { posts } = Astro.props;
+---
+<ul class="post-list">
+  {posts.map((p) => (
+    <li>
+      <h2><a href={withBase(`/posts/${p.slug}/`)}>{p.data.title}</a></h2>
+      <div class="meta">
+        <time datetime={p.data.date.toISOString()}>{fmtDate(p.data.date)}</time>
+        · {p.data.category} · {readingMinutes(p.body)} min read
+      </div>
+      <p>{p.data.description}</p>
+    </li>
+  ))}
+</ul>

@@ -1,0 +1,31 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../../layouts/BaseLayout.astro';
+import PostList from '../../../components/PostList.astro';
+import Pagination from '../../../components/Pagination.astro';
+import { getPosts } from '../../../lib/posts';
+import { SITE } from '../../../config';
+import { slugify } from '../../../lib/util';
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const posts = await getPosts();
+  const cats = [...new Set(posts.map((p) => p.data.category))];
+  return cats.flatMap((cat) =>
+    paginate(
+      posts.filter((p) => p.data.category === cat),
+      { pageSize: SITE.postsPerPage, params: { category: slugify(cat) }, props: { category: cat } },
+    ),
+  );
+}) satisfies GetStaticPaths;
+
+const { page, category } = Astro.props;
+const base = `/category/${slugify(category)}/`;
+const path = page.currentPage === 1 ? base : `${base}${page.currentPage}/`;
+const title = page.currentPage === 1 ? `${category} articles` : `${category} articles, page ${page.currentPage}`;
+---
+<Base title={title} description={`${category} guides and tutorials from ${SITE.name}.`} path={path}>
+  <h1>{category}</h1>
+  <p class="lede">Guides and tutorials in this category, newest first.</p>
+  <PostList posts={page.data} />
+  <Pagination prev={page.url.prev} next={page.url.next} current={page.currentPage} total={page.lastPage} />
+</Base>

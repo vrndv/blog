@@ -1,0 +1,14 @@
+---
+import Base from '../layouts/BaseLayout.astro';
+import { SITE } from '../config';
+import { withBase } from '../lib/util';
+---
+<Base title="About" description={`About ${SITE.name}: what we publish and how.`} path="/about/">
+  <h1>About {SITE.name}</h1>
+  <div class="prose">
+    <p>{SITE.name} publishes short, practical guides on Linux, defensive cybersecurity, networking, self-hosting and everyday developer tools.</p>
+    <p>New articles are published several times a day. They are written with AI assistance and published automatically. Read how that works, and what that means for accuracy, in our <a href={withBase('/editorial-policy/')}>editorial policy</a>.</p>
+    <p>Security content here is defensive: hardening, detection and safe configuration. We do not publish attack tooling or instructions for unauthorised access.</p>
+    <p>Machine-readable access: <a href={withBase('/rss.xml')}>RSS</a>, <a href={withBase('/api/posts.json')}>JSON index</a>, <a href={withBase('/llms.txt')}>llms.txt</a> and a Markdown version of every article.</p>
+  </div>
+</Base>

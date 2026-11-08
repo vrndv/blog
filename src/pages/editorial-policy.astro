@@ -1,0 +1,17 @@
+---
+import Base from '../layouts/BaseLayout.astro';
+import { SITE } from '../config';
+---
+<Base title="Editorial policy" description={`How ${SITE.name} creates, checks and corrects its articles, including AI use.`} path="/editorial-policy/">
+  <h1>Editorial policy</h1>
+  <div class="prose">
+    <h2>How articles are made</h2>
+    <p>Articles are drafted by an AI language model from a curated list of topics and then published automatically. Automated checks reject drafts that are too short, duplicated, malformed or contain placeholder text. Individual articles are not reviewed by a human before publication.</p>
+    <h2>What that means for you</h2>
+    <p>AI-written technical content can contain mistakes. Treat articles as a starting point, verify important details against official documentation, and test commands on a non-production system before running them on anything you care about.</p>
+    <h2>Security content</h2>
+    <p>We publish defensive material only: hardening, monitoring, awareness and safe configuration. We do not publish malware, exploit code or guides for unauthorised access.</p>
+    <h2>Corrections and removals</h2>
+    <p>If we are told about an error, we correct or remove the article.{SITE.email ? ` Contact us at ${SITE.email}.` : ''}</p>
+  </div>
+</Base>

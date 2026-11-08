@@ -1,0 +1,63 @@
+{
+  "categories": [
+    {
+      "name": "Linux",
+      "seeds": [
+        "systemd units and timers explained",
+        "managing disk space with du, ncdu and lsblk",
+        "file permissions, ACLs and umask",
+        "journalctl tips for troubleshooting",
+        "bash scripting best practices",
+        "package management across apt, dnf and pacman",
+        "SSH configuration and key management",
+        "process management with ps, top, htop and nice"
+      ]
+    },
+    {
+      "name": "Cybersecurity",
+      "seeds": [
+        "hardening an SSH server",
+        "password managers and passkeys for everyday users",
+        "phishing recognition and reporting",
+        "basics of TLS and certificates",
+        "firewall basics with ufw and nftables",
+        "backup strategy and the 3-2-1 rule",
+        "reading logs to spot suspicious logins",
+        "multi-factor authentication choices compared"
+      ]
+    },
+    {
+      "name": "Tech Explained",
+      "seeds": [
+        "how DNS resolution works step by step",
+        "Git workflows for small teams",
+        "what containers actually are",
+        "how HTTPS keeps traffic private",
+        "REST vs GraphQL for beginners",
+        "how open source licenses differ",
+        "regular expressions without the pain",
+        "how CDNs and caching speed up websites"
+      ]
+    },
+    {
+      "name": "Self-Hosting & Networking",
+      "seeds": [
+        "setting up a home lab on a budget",
+        "reverse proxies with Nginx and Caddy",
+        "Docker Compose for small services",
+        "subnetting made simple",
+        "VPN options: WireGuard vs OpenVPN",
+        "monitoring a server with free tools",
+        "DNS ad-blocking at home",
+        "safe remote access to a home network"
+      ]
+    }
+  ],
+  "blocked_phrases": [
+    "lorem ipsum",
+    "as an ai language model",
+    "[insert",
+    "todo:",
+    "i cannot fulfill"
+  ]
+}

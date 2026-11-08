@@ -1,0 +1,48 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../layouts/BaseLayout.astro';
+import PostList from '../components/PostList.astro';
+import Pagination from '../components/Pagination.astro';
+import { getPosts, categoryCounts } from '../lib/posts';
+import { SITE } from '../config';
+import { absUrl, withBase } from '../lib/util';
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const posts = await getPosts();
+  return paginate(posts, { pageSize: SITE.postsPerPage });
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+const isFirst = page.currentPage === 1;
+const path = isFirst ? '/' : `/${page.currentPage}/`;
+const title = isFirst ? `${SITE.name}: ${SITE.tagline}` : `Latest articles, page ${page.currentPage}`;
+const cats = categoryCounts(await getPosts());
+const jsonLd = isFirst
+  ? [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: SITE.name,
+        url: absUrl('/', Astro.site),
+        description: SITE.description,
+        inLanguage: SITE.lang,
+      },
+    ]
+  : [];
+---
+<Base title={title} description={SITE.description} path={path} jsonLd={jsonLd}>
+  {isFirst && (
+    <>
+      <h1>{SITE.name}</h1>
+      <p class="lede">{SITE.description}</p>
+      <ul class="chips" aria-label="Categories">
+        {cats.map((c) => <li><a href={withBase(`/category/${c.slug}/`)}>{c.name} ({c.count})</a></li>)}
+      </ul>
+    </>
+  )}
+  {!isFirst && <h1>Latest articles</h1>}
+  {page.data.length === 0
+    ? <p>No articles yet. The first one is on its way.</p>
+    : <PostList posts={page.data} />}
+  <Pagination prev={page.url.prev} next={page.url.next} current={page.currentPage} total={page.lastPage} />
+</Base>

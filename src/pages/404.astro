@@ -1,0 +1,8 @@
+---
+import Base from '../layouts/BaseLayout.astro';
+import { withBase } from '../lib/util';
+---
+<Base title="Page not found" description="This page could not be found." path="/404/" noindex>
+  <h1>Page not found</h1>
+  <p>The page you wanted does not exist. <a href={withBase('/')}>Go to the homepage</a>.</p>
+</Base>

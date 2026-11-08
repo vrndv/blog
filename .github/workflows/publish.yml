@@ -1,0 +1,44 @@
+name: Publish blog post
+
+on:
+  schedule:
+    # 05:03, 11:03, 17:03, 23:03 UTC (minute 3 avoids the busiest top-of-hour delays)
+    - cron: "3 5,11,17,23 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate post with Groq
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: python3 scripts/generate_post.py
+
+      - name: Commit new post and trigger deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "blog-bot"
+          git config user.email "blog-bot@users.noreply.github.com"
+          git add content/posts
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git commit -m "post: $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git pull --rebase
+          git push
+          # Pushes made with GITHUB_TOKEN do not trigger other workflows, so start the deploy explicitly.
+          gh workflow run deploy.yml --ref "${GITHUB_REF_NAME}"

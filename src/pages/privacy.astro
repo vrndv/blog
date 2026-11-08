@@ -1,0 +1,13 @@
+---
+import Base from '../layouts/BaseLayout.astro';
+import { SITE } from '../config';
+---
+<Base title="Privacy" description={`Privacy information for ${SITE.name}.`} path="/privacy/">
+  <h1>Privacy</h1>
+  <div class="prose">
+    <p>This site does not use cookies, analytics or advertising trackers at the time of writing.</p>
+    <p>If you use the light/dark toggle, your choice is saved in your browser's local storage on your device. It is never sent to us.</p>
+    <p>The site is hosted on GitHub Pages. GitHub may process technical data such as your IP address when you visit, under its own privacy statement.</p>
+    <p>If we add analytics or advertising in future, we will update this page and ask for consent where the law requires it.</p>
+  </div>
+</Base>
