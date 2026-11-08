@@ -4,7 +4,7 @@ Every 6 hours (05:03, 11:03, 17:03, 23:03 UTC) a GitHub Action:
 1. picks a recent story (Hacker News front page, then security / Linux / tech RSS feeds),
 2. reads the article text for grounding,
 3. has Groq write an ORIGINAL explainer that names and links the source (copy checks included),
-4. adds a free Pexels photo (or a generated cover if none),
+4. searches Openverse for a commercially reusable, openly licensed image (or uses a generated cover if none is found),
 5. commits the post, then rebuilds and deploys the Astro site to GitHub Pages.
 If no story is found it writes an evergreen post from `config/topics.json`.
 
@@ -12,7 +12,7 @@ If no story is found it writes an evergreen post from `config/topics.json`.
 1. Public GitHub repo, upload everything here (keep `.github/`).
 2. Secrets (Settings -> Secrets and variables -> Actions -> Secrets):
    - `GROQ_API_KEY` from https://console.groq.com (required)
-   - `PEXELS_API_KEY` from https://www.pexels.com/api/ (free, optional; no key = generated covers only)
+   - No image API key is needed. The generator uses Openverse anonymous search; it may fall back to a generated cover if no suitable image is found or the API is rate-limited.
 3. Settings -> Pages -> Source: **GitHub Actions**.
 4. Custom domain / sub-path (Settings -> Secrets and variables -> Actions -> Variables):
    - `SITE_URL` = https://yourdomain.com
@@ -23,7 +23,7 @@ If no story is found it writes an evergreen post from `config/topics.json`.
 ## Sources
 Edit `config/sources.json` (feeds, keywords, max age). Feed URLs can change; failing feeds are skipped.
 Posts are written in original words, link to the source, and are rejected if they reuse a 9-word run from it.
-Source-site images are never copied.
+Source-site images are never copied. Openverse image results include licence and attribution metadata; the article links to the original image page and licence. Only results marked for commercial use are considered, but verify licence details before publication.
 
 ## Ads (Google AdSense)
 1. Apply at adsense.google.com once the site has real content. Approval is not guaranteed.

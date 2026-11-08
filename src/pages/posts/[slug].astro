@@ -78,9 +78,11 @@ const jsonLd = [
       </div>
       <figure class="hero-img">
         <Cover post={post} eager />
-        {d.image && d.image_credit && (
+        {d.image && (
           <figcaption class="meta">
-            Photo by <a href={d.image_credit_url} rel="noopener">{d.image_credit}</a> on <a href="https://www.pexels.com" rel="noopener">Pexels</a>
+            Image {d.image_credit ? <>by <a href={d.image_credit_url || d.image_source_url} rel="noopener" target="_blank">{d.image_credit}</a></> : null}
+            {d.image_license && d.image_license_url ? <> · Licensed under <a href={d.image_license_url} rel="noopener" target="_blank">{d.image_license}</a></> : null}
+            {d.image_source_url ? <> · <a href={d.image_source_url} rel="noopener" target="_blank">Source</a></> : <> · via Openverse</>}
           </figcaption>
         )}
       </figure>

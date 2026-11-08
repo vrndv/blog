@@ -10,7 +10,7 @@ export const GET: APIRoute = async ({ site }) => {
     '',
     `> ${SITE.description}`,
     '',
-    'Content is free to read.',
+    ' Content is free to read.',
     '',
     '## Machine-readable access',
     '',

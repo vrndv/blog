@@ -2,10 +2,11 @@
 """Generate one blog post with Groq and save it as Markdown. Standard library only.
 
 Flow: pick a recent story (Hacker News / RSS feeds) -> read the article text for grounding ->
-Groq writes an ORIGINAL explainer with attribution -> checks -> optional Pexels photo -> save.
+Groq writes an ORIGINAL explainer with attribution -> checks -> optional openly licensed Openverse image -> save.
 Falls back to an evergreen topic if no story can be found.
 
-Env: GROQ_API_KEY (required), PEXELS_API_KEY (optional), GROQ_MODELS (optional override), MIN_WORDS.
+Env: GROQ_API_KEY (required), GROQ_MODELS (optional override), MIN_WORDS.
+Openverse is queried anonymously; no image API key is required.
 """
 import html
 import json
@@ -366,23 +367,46 @@ def validate(title, desc, tags, body, existing_titles, story=None):
 
 
 # ---------- images ----------
-def find_image(query, used_images, key):
-    if not key or not query:
+def find_image(query, used_images):
+    """Find a commercially reusable, openly licensed image via Openverse.
+
+    Anonymous Openverse requests are rate-limited, so this workflow makes only
+    one small search per generated post. A failed search is non-fatal: the site
+    displays its built-in generated cover instead.
+    """
+    if not query:
         return None
     try:
-        url = "https://api.pexels.com/v1/search?" + urllib.parse.urlencode(
-            {"query": query, "per_page": 15, "orientation": "landscape"})
-        raw, cs = fetch(url, timeout=20, headers={"Authorization": key})
-        photos = json.loads(raw.decode(cs)).get("photos", [])
-        random.shuffle(photos)
-        for ph in photos:
-            src = ph.get("src", {}).get("landscape")
-            if src and src not in used_images:
-                return {"image": src, "image_alt": ph.get("alt") or query,
-                        "image_credit": ph.get("photographer", "Pexels"),
-                        "image_credit_url": ph.get("url", "https://www.pexels.com")}
+        url = "https://api.openverse.org/v1/images/?" + urllib.parse.urlencode({
+            "q": query,
+            "page_size": 20,
+            "license_type": "commercial",
+            "mature": "false",
+        })
+        raw, cs = fetch(url, timeout=25, headers={"Accept": "application/json"})
+        results = json.loads(raw.decode(cs)).get("results", [])
+        random.shuffle(results)
+        for item in results:
+            src = item.get("url")
+            landing = item.get("foreign_landing_url")
+            license_url = item.get("license_url")
+            license_code = (item.get("license") or "").upper()
+            if not src or src in used_images or not landing or not license_url or not license_code:
+                continue
+            creator = (item.get("creator") or "").strip()
+            creator_url = item.get("creator_url") or landing
+            title = (item.get("title") or "").strip()
+            return {
+                "image": src,
+                "image_alt": title or item.get("attribution") or query,
+                "image_credit": creator or "Unknown creator",
+                "image_credit_url": creator_url,
+                "image_source_url": landing,
+                "image_license": f"{license_code}{(' ' + str(item.get('license_version'))) if item.get('license_version') else ''}",
+                "image_license_url": license_url,
+            }
     except Exception as e:
-        print(f"pexels failed: {e}", file=sys.stderr)
+        print(f"Openverse image search failed: {e}", file=sys.stderr)
     return None
 
 
@@ -456,7 +480,6 @@ def main() -> int:
     if not key:
         print("GROQ_API_KEY is not set", file=sys.stderr)
         return 1
-    pexels = os.environ.get("PEXELS_API_KEY", "")
     now = datetime.now(timezone.utc)
     existing = recent_titles()
     used_urls = set(frontmatter_values("source_url"))
@@ -489,7 +512,7 @@ def main() -> int:
 
     model, (title, desc, tags, body, category, img_query) = result
     category = fixed_category or (category if category in ALL_CATEGORIES else "Tech News")
-    img = find_image(img_query, used_images, pexels)
+    img = find_image(img_query, used_images)
     path = write_post(now, title, desc, tags, body, category, model, story, img)
     print(f"Wrote {path.relative_to(ROOT)} ({len(body.split())} words, {model}, image={'yes' if img else 'no'})")
     return 0

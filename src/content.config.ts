@@ -18,6 +18,9 @@ const posts = defineCollection({
     image_alt: z.string().optional(),
     image_credit: z.string().optional(),
     image_credit_url: z.string().optional(),
+    image_source_url: z.string().optional(),
+    image_license: z.string().optional(),
+    image_license_url: z.string().optional(),
   }),
 });
 
