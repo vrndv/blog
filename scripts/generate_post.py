@@ -5,7 +5,7 @@ Flow: pick a recent story (Hacker News / RSS feeds) -> read the article text for
 Groq writes an ORIGINAL explainer with attribution -> checks -> optional Pexels photo -> save.
 Falls back to an evergreen topic if no story can be found.
 
-Env: GROQ_API_KEY (required), PEXELS_API_KEY (optional), GROQ_MODELS, MIN_WORDS.
+Env: GROQ_API_KEY (required), PEXELS_API_KEY (optional), GROQ_MODELS (optional override), MIN_WORDS.
 """
 import html
 import json
@@ -29,10 +29,10 @@ CONFIG = json.loads((ROOT / "config" / "topics.json").read_text(encoding="utf-8"
 SOURCES = json.loads((ROOT / "config" / "sources.json").read_text(encoding="utf-8"))
 API_URL = "https://api.groq.com/openai/v1/chat/completions"
 UA = "Mozilla/5.0 (compatible; blog-engine/1.0)"
-MODELS = [m.strip() for m in os.environ.get(
-    "GROQ_MODELS", "openai/gpt-oss-120b,llama-3.3-70b-versatile").split(",") if m.strip()]
+PREFERRED_MODELS = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b", "llama-3.3-70b-versatile"]
+SKIP_MODELS = ("whisper", "tts", "guard", "orpheus", "playai", "embed", "compound", "safeguard")
 MIN_WORDS = int(os.environ.get("MIN_WORDS", "700"))
-MAX_ATTEMPTS = 3
+MAX_ATTEMPTS = 2
 ALL_CATEGORIES = [c["name"] for c in CONFIG["categories"]]
 
 FORMAT = (
@@ -317,9 +317,23 @@ def parse(raw: str):
     return f["TITLE"], f["DESCRIPTION"], tags, body, f["CATEGORY"], f["IMAGE_QUERY"]
 
 
-def shingles(text, n=9):
-    toks = re.findall(r"[a-z0-9']+", text.lower())
-    return {tuple(toks[i:i + n]) for i in range(max(0, len(toks) - n + 1))}
+class CopyError(ValueError):
+    def __init__(self, phrase):
+        super().__init__(f"copied a long phrase from the source: '{phrase}'")
+        self.phrase = phrase
+
+
+def _tokens(text):
+    return re.findall(r"[a-z0-9']+", re.sub(r"```.*?```", " ", text, flags=re.S).lower())
+
+
+def find_copied(body, material, n=10, max_hits=1):
+    """Return the first copied run of 10+ words if the draft repeats the source too closely, else None."""
+    st = _tokens(material)
+    src = {tuple(st[i:i + n]) for i in range(max(0, len(st) - n + 1))}
+    bt = _tokens(body)
+    hits = [" ".join(bt[i:i + n]) for i in range(max(0, len(bt) - n + 1)) if tuple(bt[i:i + n]) in src]
+    return hits[0] if len(hits) > max_hits else None
 
 
 def validate(title, desc, tags, body, existing_titles, story=None):
@@ -346,8 +360,9 @@ def validate(title, desc, tags, body, existing_titles, story=None):
         a, b = set(norm(title).split()), set(norm(story["title"]).split())
         if a and b and len(a & b) / len(a | b) >= 0.75:
             raise ValueError("title too close to source headline")
-        if shingles(body) & shingles(story["material"]):
-            raise ValueError("copied a long phrase from the source")
+        copied = find_copied(body, story["material"])
+        if copied:
+            raise CopyError(copied)
 
 
 # ---------- images ----------
@@ -394,6 +409,48 @@ def write_post(now, title, desc, tags, body, category, model, story, img):
     return path
 
 
+def pick_models(key):
+    env = os.environ.get("GROQ_MODELS")
+    if env:
+        return [x.strip() for x in env.split(",") if x.strip()]
+    try:
+        raw, cs = fetch("https://api.groq.com/openai/v1/models", headers={"Authorization": f"Bearer {key}"})
+        ids = [x["id"] for x in json.loads(raw.decode(cs)).get("data", []) if x.get("active", True)]
+    except Exception as e:
+        print(f"could not list models ({e}); using defaults", file=sys.stderr)
+        return PREFERRED_MODELS[:2]
+    chosen = [x for x in PREFERRED_MODELS if x in ids]
+    chosen += [i for i in ids if i not in chosen and not any(k in i.lower() for k in SKIP_MODELS)][:2]
+    print("Models to try:", chosen)
+    return chosen or PREFERRED_MODELS[:2]
+
+
+def attempt_models(models, system, prompt, key, existing, story):
+    last, extra = "unknown", ""
+    for model in models:
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            try:
+                raw = call_groq(model, system, prompt + extra, key)
+                parsed = parse(raw)
+                validate(*parsed[:4], existing, story)
+                return model, parsed
+            except CopyError as e:
+                last = f"{model} attempt {attempt}: {e}"
+                print(last, file=sys.stderr)
+                extra = ("\n\nIMPORTANT: your previous draft reused this passage from the source: "
+                         f"\"{e.phrase}\". Rewrite the WHOLE article in completely different words. "
+                         "Do not quote the source; explain ideas in your own phrasing.")
+            except ValueError as e:
+                last = f"{model} attempt {attempt}: {e}"
+                print(last, file=sys.stderr)
+            except RuntimeError as e:
+                last = f"{model} attempt {attempt}: {e}"
+                print(last, file=sys.stderr)
+                break  # API-level problem: try the next model
+    print(f"All attempts failed. Last error: {last}", file=sys.stderr)
+    return None
+
+
 def main() -> int:
     key = os.environ.get("GROQ_API_KEY")
     if not key:
@@ -406,46 +463,36 @@ def main() -> int:
     used_images = set(frontmatter_values("image"))
     used_titles = {norm(t) for t in existing}
     avoid = "\n".join(f"- {t}" for t in existing[:25]) or "(none yet)"
+    models = pick_models(key)
 
+    result, fixed_category = None, None
     story = pick_story(now, used_urls, used_titles)
     if story:
-        print(f"Story: {story['title']} ({story['source']}, group {story['group']})")
-        system = NEWS_SYSTEM
+        print(f"Story: {story['title']} ({story['source']}, group {story['group']})", flush=True)
         prompt = (f"Source site: {story['source']}\nSource URL: {story['link']}\n"
                   f"Original headline (do not reuse): {story['title']}\n\nSOURCE MATERIAL:\n{story['material']}\n\n"
                   f"Recent blog titles to avoid resembling:\n{avoid}")
-        fixed_category = None
-    else:
-        print("No usable story found; writing an evergreen post", file=sys.stderr)
+        result = attempt_models(models, NEWS_SYSTEM, prompt, key, existing, story)
+    if result is None:
+        print("Writing an evergreen post instead", file=sys.stderr, flush=True)
+        story = None
         cats = [c for c in CONFIG["categories"] if c.get("seeds")]
         slot = (now.hour // 6) % 4
         cat = cats[(now.timetuple().tm_yday * 4 + slot) % len(cats)]
         seed = random.Random(f"{now.date()}-{slot}").choice(cat["seeds"])
-        system = EVERGREEN_SYSTEM
         prompt = (f"Category: {cat['name']}\nTopic idea: {seed}\nPick a fresh, specific angle. "
                   f"Do NOT resemble these recent titles:\n{avoid}")
         fixed_category = cat["name"]
+        result = attempt_models(models, EVERGREEN_SYSTEM, prompt, key, existing, None)
+    if result is None:
+        return 1
 
-    last_error = "unknown"
-    for model in MODELS:
-        for attempt in range(1, MAX_ATTEMPTS + 1):
-            try:
-                raw = call_groq(model, system, prompt, key)
-                title, desc, tags, body, category, img_query = parse(raw)
-                validate(title, desc, tags, body, existing, story)
-            except (ValueError, RuntimeError) as e:
-                last_error = f"{model} attempt {attempt}: {e}"
-                print(last_error, file=sys.stderr)
-                if isinstance(e, RuntimeError):
-                    break
-                continue
-            category = fixed_category or (category if category in ALL_CATEGORIES else "Tech News")
-            img = find_image(img_query, used_images, pexels)
-            path = write_post(now, title, desc, tags, body, category, model, story, img)
-            print(f"Wrote {path.relative_to(ROOT)} ({len(body.split())} words, {model}, image={'yes' if img else 'no'})")
-            return 0
-    print(f"All attempts failed. Last error: {last_error}", file=sys.stderr)
-    return 1
+    model, (title, desc, tags, body, category, img_query) = result
+    category = fixed_category or (category if category in ALL_CATEGORIES else "Tech News")
+    img = find_image(img_query, used_images, pexels)
+    path = write_post(now, title, desc, tags, body, category, model, story, img)
+    print(f"Wrote {path.relative_to(ROOT)} ({len(body.split())} words, {model}, image={'yes' if img else 'no'})")
+    return 0
 
 
 if __name__ == "__main__":

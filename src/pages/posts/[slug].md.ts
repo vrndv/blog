@@ -24,7 +24,7 @@ export const GET: APIRoute = ({ props, site }) => {
     `- Tags: ${d.tags.join(', ')}`,
     `- Publisher: ${SITE.name}`,
     d.source_url ? `- Based on reporting from: ${d.source_name ?? ''} ${d.source_url}` : '',
-    d.ai_assisted ? '- Note: written with AI assistance and published without individual human review.' : '',
+    d.ai_assisted ? '- ' : '',
     '',
     post.body ?? '',
     '',
