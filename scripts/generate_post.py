@@ -368,47 +368,115 @@ def validate(title, desc, tags, body, existing_titles, story=None):
 
 # ---------- images ----------
 def find_image(query, used_images):
-    """Find a commercially reusable, openly licensed image via Openverse.
-
-    Anonymous Openverse requests are rate-limited, so this workflow makes only
-    one small search per generated post. A failed search is non-fatal: the site
-    displays its built-in generated cover instead.
-    """
+    """Find a commercially reusable image through Openverse."""
     if not query:
         return None
-    try:
+
+    # Keep the number of requests small for anonymous API usage.
+    queries = [query]
+
+    # Try a simpler version if the original search returns no usable image.
+    words = re.findall(r"[a-zA-Z0-9]+", query)
+    if len(words) > 4:
+        queries.append(" ".join(words[:4]))
+    if len(words) > 2:
+        queries.append(" ".join(words[:2]))
+
+    # CC0, CC BY and CC BY-SA allow commercial use, subject to their terms.
+    allowed_licenses = {"CC0", "BY", "BY-SA", "PDM"}
+
+    for search_query in dict.fromkeys(queries):
+        print(f"Openverse: searching for {search_query!r}", file=sys.stderr)
+
         url = "https://api.openverse.org/v1/images/?" + urllib.parse.urlencode({
-            "q": query,
+            "q": search_query,
             "page_size": 20,
             "license_type": "commercial",
             "mature": "false",
         })
-        raw, cs = fetch(url, timeout=25, headers={"Accept": "application/json"})
-        results = json.loads(raw.decode(cs)).get("results", [])
+
+        raw = None
+        charset = "utf-8"
+
+        # Retry only temporary HTTP failures.
+        for attempt in range(3):
+            try:
+                raw, charset = fetch(
+                    url,
+                    timeout=25,
+                    headers={"Accept": "application/json"},
+                )
+                break
+            except urllib.error.HTTPError as e:
+                print(
+                    f"Openverse HTTP {e.code} (attempt {attempt + 1}/3)",
+                    file=sys.stderr,
+                )
+                if e.code not in (429, 500, 502, 503, 504) or attempt == 2:
+                    break
+                time.sleep(2 ** attempt)
+            except (urllib.error.URLError, TimeoutError) as e:
+                print(
+                    f"Openverse connection error (attempt {attempt + 1}/3): {e}",
+                    file=sys.stderr,
+                )
+                if attempt == 2:
+                    break
+                time.sleep(2 ** attempt)
+            except Exception as e:
+                print(f"Openverse request failed: {e}", file=sys.stderr)
+                break
+
+        if raw is None:
+            continue
+
+        try:
+            results = json.loads(raw.decode(charset)).get("results", [])
+        except (ValueError, UnicodeError) as e:
+            print(f"Openverse returned invalid JSON: {e}", file=sys.stderr)
+            continue
+
+        print(f"Openverse: received {len(results)} results", file=sys.stderr)
         random.shuffle(results)
+
         for item in results:
             src = item.get("url")
             landing = item.get("foreign_landing_url")
             license_url = item.get("license_url")
-            license_code = (item.get("license") or "").upper()
-            if not src or src in used_images or not landing or not license_url or not license_code:
+            license_code = (item.get("license") or "").upper().strip()
+
+            if not src or src in used_images:
                 continue
+            if not landing or not license_url:
+                continue
+            if license_code not in allowed_licenses:
+                continue
+
             creator = (item.get("creator") or "").strip()
             creator_url = item.get("creator_url") or landing
             title = (item.get("title") or "").strip()
+
+            print(
+                f"Openverse: selected {license_code} image: {title or src}",
+                file=sys.stderr,
+            )
+
             return {
                 "image": src,
-                "image_alt": title or item.get("attribution") or query,
+                "image_alt": title or item.get("attribution") or search_query,
                 "image_credit": creator or "Unknown creator",
                 "image_credit_url": creator_url,
                 "image_source_url": landing,
-                "image_license": f"{license_code}{(' ' + str(item.get('license_version'))) if item.get('license_version') else ''}",
+                "image_license": (
+                    f"{license_code} {item.get('license_version')}"
+                    if item.get("license_version")
+                    else license_code
+                ),
                 "image_license_url": license_url,
             }
-    except Exception as e:
-        print(f"Openverse image search failed: {e}", file=sys.stderr)
-    return None
 
+    print("Openverse: no suitable image found after fallback searches", file=sys.stderr)
+    return None
 
 # ---------- main ----------
 def write_post(now, title, desc, tags, body, category, model, story, img):
