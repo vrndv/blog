@@ -9,6 +9,13 @@ source_url: "https://jmmv.dev/2026/11/zkeys-intro.html"
 draft: false
 ai_assisted: true
 model: "openai/gpt-oss-120b"
+image: "https://upload.wikimedia.org/wikipedia/commons/a/a2/NAS_server.png"
+image_alt: "A network-attached storage server with multiple drive bays"
+image_credit: "Bin im Garten"
+image_credit_url: "https://commons.wikimedia.org/wiki/User:Bin_im_Garten"
+image_source_url: "https://commons.wikimedia.org/wiki/File:NAS_server.png"
+image_license: "CC BY-SA 3.0"
+image_license_url: "https://creativecommons.org/licenses/by-sa/3.0/"
 ---
 ## What happened  
 
